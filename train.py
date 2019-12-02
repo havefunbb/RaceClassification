@@ -33,8 +33,6 @@ def main():
                       help='load checkpoint model (default: False)')
     parser.add_option('-v', '--verbose', dest='verbose', default=100, type='int',
                       help='show information for each <verbose> iterations (default: 100)')
-    parser.add_option('-m', '--model', default='resnet101'
-                      help='which model for training [resnet101,resnet50,inceptionnet,wsdan]')
     parser.add_option('--lr', '--learning-rate', dest='lr', default=1e-3, type='float',
                       help='learning rate (default: 1e-3)')
     parser.add_option('--sf', '--save-freq', dest='save_freq', default=1, type='int',
@@ -43,6 +41,8 @@ def main():
                       help='saving directory of .ckpt models (default: ./models)')
     parser.add_option('--init', '--initial-training', dest='initial_training', default=1, type='int',
                       help='train from 1-beginning or 0-resume training (default: 1)')
+    parser.add_option('--model', '--model-training', dest='model_training', default='wsdan',
+                      help='it can be wsdan,resnet50,resnet100,inception')
 
     (options, args) = parser.parse_args()
 
@@ -56,13 +56,15 @@ def main():
     num_classes = 4
     num_attentions = 32
     start_epoch = 0
+    if options.model-training == 'wsdan':
+        feature_net = inception_v3(pretrained=True)
+        net = WSDAN(num_classes=num_classes, M=num_attentions, net=feature_net)
 
-    feature_net = inception_v3(pretrained=True)
-    net = WSDAN(num_classes=num_classes, M=num_attentions, net=feature_net)
-
-    # feature_center: size of (#classes, #attention_maps, #channel_features)
-    feature_center = torch.zeros(num_classes, num_attentions, net.num_features * net.expansion).to(torch.device("cuda"))
-
+        # feature_center: size of (#classes, #attention_maps, #channel_features)
+        feature_center = torch.zeros(num_classes, num_attentions, net.num_features * net.expansion).to(torch.device("cuda"))
+    elif options.model-training == 'inception':
+        net = inception_v3(pretrained=True)
+        #....
     if options.ckpt:
         ckpt = options.ckpt
 
@@ -102,20 +104,17 @@ def main():
     # Load dataset
     ##################################
    
-    transform = transforms.Compose([transforms.Resize(size=(256, 256),
+    transform = transforms.Compose([transforms.Resize(size=(256, 256)),
                                     transforms.ToTensor(),
                                     transforms.Normalize(mean=[0.485, 0.456, 0.406], 
-                                    std=[0.229, 0.224, 0.225])
-    train_dataset, validate_dataset,test_dataset = CustomDataset(data_root='data/train/',csv_file='data/train_image_data.csv',transform=transform), \
-                                      CustomDataset(data_root='data/val/',csv_file='data/val_image_data.csv',transform=transform), \
-                                      CustomDataset(data_root='data/test/',csv_file='data/test_image_data.csv',transform=transform)
+                                    std=[0.229, 0.224, 0.225])])
+    train_dataset = CustomDataset(data_root='/mnt/HDD/RFW/train/data/',csv_file='data/RFW_Train40k_Images_Metada.csv',transform=transform)
+    val_dataset = CustomDataset(data_root='/mnt/HDD/RFW/train/data/',csv_file='data/RFW_Val4k_Images_Metadata.csv',transform=transform)
+    test_dataset = CustomDataset(data_root='/mnt/HDD/RFW/test/data/',csv_file='data/RFW_Test_Images_Metadata.csv',transform=transform)
 
-    train_loader, validate_loader,test_loader = DataLoader(train_dataset, batch_size=options.batch_size, shuffle=True,
-                                               num_workers=options.workers, pin_memory=True), \
-                                    DataLoader(validate_dataset, batch_size=options.batch_size * 4, shuffle=False,
-                                               num_workers=options.workers, pin_memory=True),\
-                                    DataLoader(test_dataset, batch_size=options.batch_size * 4, shuffle=False,
-                                            num_workers=options.workers, pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=options.batch_size, shuffle=True,num_workers=options.workers, pin_memory=True)
+    validate_loader = DataLoader(val_dataset, batch_size=options.batch_size * 4, shuffle=False,num_workers=options.workers, pin_memory=True)
+    test_loader = DataLoader(test_dataset, batch_size=options.batch_size * 4, shuffle=False,num_workers=options.workers, pin_memory=True)
 
     optimizer = torch.optim.SGD(net.parameters(), lr=options.lr, momentum=0.9, weight_decay=0.00001)
     loss = nn.CrossEntropyLoss()
@@ -131,7 +130,7 @@ def main():
     ##################################
     logging.info('')
     logging.info('Start training: Total epochs: {}, Batch size: {}, Training size: {}, Validation size: {}'.
-                 format(options.epochs, options.batch_size, len(trainset), len(valset)))
+                 format(options.epochs, options.batch_size, len(train_dataset), len(val_dataset)))
 
     for epoch in range(start_epoch, options.epochs):
         train(epoch=epoch,
@@ -184,7 +183,6 @@ def train(**kwargs):
     net.train()
     for i, (X, y) in enumerate(data_loader):
         batch_start = time.time()
-
         # obtain data for training
         X = X.to(torch.device("cuda"))
         y = y.to(torch.device("cuda"))

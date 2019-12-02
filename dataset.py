@@ -21,16 +21,20 @@ class CustomDataset(Dataset):
 
     def __init__(self, data_root,csv_file,transform):
         self.meta_data = pd.read_csv(csv_file)
+        self.label_to_idx = { 'African':0,'Asian':1,'Caucasian':2, 'Indian':3}
         self.race_labels = self.meta_data.race.values
+        self.data_path = self.meta_data.filename.values
+        self.data_root =data_root
         self.transform =  transform
   
 
     def __getitem__(self, item):
-        path = self.data_path[item]
+        path = os.path.join(self.data_root,self.data_path[item])
+
         image = Image.open(path).convert('RGB')  # (C, H, W)
         image = self.transform(image)
        
-        return image, self.race_labels[item]
+        return image, self.label_to_idx[self.race_labels[item]]
 
     def __len__(self):
         return len(self.data_path)
