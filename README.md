@@ -11,8 +11,8 @@ Race Classification for 4 races (African,Asian,Caucasian,South Asian (Indian))
 
 For race classification we use RFW Train set, we subsample the dataset and obtain about 40.000 images. Train set is race balance but not gender balance.
 
-<object data="source/all_data.pdf" type="application/pdf" width="700px" height="700px">
-    <embed src="source/all_data.pdf">
+<object data="https://github.com/seymayucer/RaceClassification/blob/master/source/all_data.pdf" type="application/pdf" width="700px" height="700px">
+    <embed src="https://github.com/seymayucer/RaceClassification/blob/master/source/all_data.pdf">
         <p>This browser does not support PDFs. Please download the PDF to view it: <a href="source/all_data.pdf">Download PDF</a>.</p>
     </embed>
 </object>
