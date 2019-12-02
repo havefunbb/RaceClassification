@@ -56,7 +56,7 @@ def main():
     num_classes = 4
     num_attentions = 32
     start_epoch = 0
-    if options.model-training == 'wsdan':
+    if options.model_training == 'wsdan':
         feature_net = inception_v3(pretrained=True)
         net = WSDAN(num_classes=num_classes, M=num_attentions, net=feature_net)
 
@@ -104,7 +104,7 @@ def main():
     # Load dataset
     ##################################
    
-    transform = transforms.Compose([transforms.Resize(size=(256, 256)),
+    transform = transforms.Compose([transforms.Resize(size=image_size),
                                     transforms.ToTensor(),
                                     transforms.Normalize(mean=[0.485, 0.456, 0.406], 
                                     std=[0.229, 0.224, 0.225])])

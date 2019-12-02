@@ -30,12 +30,14 @@ def accuracy(output, target, topk=(1,)):
     return np.array(res)
 
 
+
 def generate_data_svg_plots(data_mode,metadata_file):
     data = pd.read_csv(metadata_file)
+    data =data.sort_values(by=['race'])
     
     fig = px.histogram(data, x="race", 
                     histfunc="sum", 
-                    color="race",
+                    color=data.race,
                     color_discrete_sequence=['#ED553B','#F6D55C','#3CAEA3','#20639B'], 
                     barmode="group")
 
