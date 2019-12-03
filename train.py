@@ -54,7 +54,7 @@ def main():
     ##################################
     image_size = (400, 400)
     num_classes = 4
-    num_attentions = 32
+    num_attentions = 8
     start_epoch = 0
     if options.model_training == 'wsdan':
         feature_net = inception_v3(pretrained=True)
