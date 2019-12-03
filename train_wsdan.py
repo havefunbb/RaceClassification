@@ -41,8 +41,8 @@ def main():
                       help='saving directory of .ckpt models (default: ./models)')
     parser.add_option('--init', '--initial-training', dest='initial_training', default=1, type='int',
                       help='train from 1-beginning or 0-resume training (default: 1)')
-    parser.add_option('--model', '--model-training', dest='model_training', default='wsdan',
-                      help='it can be wsdan,resnet50,resnet100,inception')
+    # parser.add_option('--model', '--model-training', dest='model_training', default='wsdan',
+    #                   help='it can be wsdan,resnet50,resnet100,inception')
 
     (options, args) = parser.parse_args()
 
@@ -56,15 +56,12 @@ def main():
     num_classes = 4
     num_attentions = 8
     start_epoch = 0
-    if options.model_training == 'wsdan':
-        feature_net = inception_v3(pretrained=True)
-        net = WSDAN(num_classes=num_classes, M=num_attentions, net=feature_net)
 
-        # feature_center: size of (#classes, #attention_maps, #channel_features)
-        feature_center = torch.zeros(num_classes, num_attentions, net.num_features * net.expansion).to(torch.device("cuda"))
-    elif options.model-training == 'inception':
-        net = inception_v3(pretrained=True)
-        #....
+    feature_net = inception_v3(pretrained=True)
+    net = WSDAN(num_classes=num_classes, M=num_attentions, net=feature_net)
+
+     
+    #....
     if options.ckpt:
         ckpt = options.ckpt
 
@@ -133,7 +130,8 @@ def main():
                  format(options.epochs, options.batch_size, len(train_dataset), len(val_dataset)))
 
     for epoch in range(start_epoch, options.epochs):
-        train(epoch=epoch,
+        train(options=options,
+            epoch=epoch,
               data_loader=train_loader,
               net=net,
               feature_center=feature_center,
@@ -151,6 +149,7 @@ def main():
 
 def train(**kwargs):
     # Retrieve training configuration
+    options = kwargs['options']
     data_loader = kwargs['data_loader']
     net = kwargs['net']
     loss = kwargs['loss']
@@ -190,20 +189,16 @@ def train(**kwargs):
         ##################################
         # Raw Image
         ##################################
+        
         y_pred, feature_matrix, attention_map = net(X)
-
-        # loss
         batch_loss = loss(y_pred, y) + l2_loss(feature_matrix, feature_center[y])
+        # loss
         epoch_loss[0] += batch_loss.item()
 
         # backward
         optimizer.zero_grad()
         batch_loss.backward()
         optimizer.step()
-
-        # Update Feature Center
-        feature_center[y] += beta * (feature_matrix.detach() - feature_center[y])
-
         # metrics: top-1, top-3, top-5 error
         with torch.no_grad():
             
@@ -212,7 +207,8 @@ def train(**kwargs):
                 epoch_acc[0]= accuracy(y_pred, y, topk=(1, 2, 3))
             else:
                 epoch_acc[0] = epoch_acc[0]+accuracy(y_pred, y, topk=(1, 2, 3))
-
+        # Update Feature Center
+        feature_center[y] += beta * (feature_matrix.detach() - feature_center[y])
         ##################################
         # Attention Cropping
         ##################################
@@ -273,24 +269,27 @@ def train(**kwargs):
             else:
                 epoch_acc[2] = epoch_acc[2]+accuracy(y_pred, y, topk=(1, 2, 3))
 
-
-        # end of this batch
+            # end of this batch
         batches += 1
         batch_end = time.time()
         if (i + 1) % verbose == 0:
             logging.info('\tBatch %d: (Raw) Loss %.4f, Accuracy: (%.2f, %.2f, %.2f), (Crop) Loss %.4f, Accuracy: (%.2f, %.2f, %.2f), (Drop) Loss %.4f, Accuracy: (%.2f, %.2f, %.2f), Time %3.2f' %
-                         (i + 1,
-                          epoch_loss[0] / batches, epoch_acc[0, 0] / batches, epoch_acc[0, 1] / batches, epoch_acc[0, 2] / batches,
-                          epoch_loss[1] / batches, epoch_acc[1, 0] / batches, epoch_acc[1, 1] / batches, epoch_acc[1, 2] / batches,
-                          epoch_loss[2] / batches, epoch_acc[2, 0] / batches, epoch_acc[2, 1] / batches, epoch_acc[2, 2] / batches,
-                          batch_end - batch_start))
+                    (i + 1,
+                    epoch_loss[0] / batches, epoch_acc[0, 0] / batches, epoch_acc[0, 1] / batches, epoch_acc[0, 2] / batches,
+                    epoch_loss[1] / batches, epoch_acc[1, 0] / batches, epoch_acc[1, 1] / batches, epoch_acc[1, 2] / batches,
+                    epoch_loss[2] / batches, epoch_acc[2, 0] / batches, epoch_acc[2, 1] / batches, epoch_acc[2, 2] / batches,
+                    batch_end - batch_start))
+
+
+    
+
+       
 
     # save checkpoint model
     if epoch % save_freq == 0:
         state_dict = net.module.state_dict()
         for key in state_dict.keys():
             state_dict[key] = state_dict[key].cpu()
-
         torch.save({
             'epoch': epoch,
             'save_dir': save_dir,
@@ -375,7 +374,7 @@ def validate(**kwargs):
                 epoch_acc = accuracy(y_pred, y, topk=(1, 2, 3))
             else:
             # metrics: top-1, top-3, top-5 error
-                epoch_acc =epoch_acc+ accuracy(y_pred, y, topk=(1, 2, 3))
+                epoch_acc = epoch_acc+ accuracy(y_pred, y, topk=(1, 2, 3))
 
             # end of this batch
             batches += 1
