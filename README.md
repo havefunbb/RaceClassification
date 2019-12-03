@@ -25,6 +25,6 @@ For race classification we use RFW Train set, we subsample the dataset and obtai
 | Resnet50 | -  | -    | -    | -   | -  |
 | Resnet101|-   | -   | -    |-   | -  |
 | Inceptionvs3 | -   | -    | -    | -   | -  |
-| WS-Dan | 93.72   |  97,83  | 98,83 |   94,48   |    88,82 | 
+| WS-Dan | 93.72   |  97,83  | 93,83 |   94,48   |    88,82 | 
 
 ### WSDAN Confusion Matrix
