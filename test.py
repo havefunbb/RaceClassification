@@ -47,7 +47,7 @@ def main():
     parser = OptionParser()
     parser.add_option('--gpu', '--gpu', dest='GPU', default=0, type='int',
                       help='GPU Id (default: 0)')
-    parser.add_option('--evalckpt', '--eval-ckpt', dest='eval_ckpt', default='models/008.ckpt',
+    parser.add_option('--evalckpt', '--eval-ckpt', dest='eval_ckpt', default='models/003.ckpt',
                       help='saved models are in ckpt directory')
     parser.add_option('-b', '--batch-size', dest='batch_size', default=16, type='int',
                       help='batch size (default: 16)')
@@ -129,30 +129,30 @@ def main():
             y_pred_crop, _, _ = net(crop_image)
             y_pred = (y_pred_raw + y_pred_crop) / 2.
 
-            if visualize:
-                # reshape attention maps
-                attention_maps = F.upsample_bilinear(attention_maps, size=(X.size(2), X.size(3)))
-                attention_maps = torch.sqrt(attention_maps.cpu() / attention_maps.max().item())
+            # if visualize:
+            #     # reshape attention maps
+            #     attention_maps = F.upsample_bilinear(attention_maps, size=(X.size(2), X.size(3)))
+            #     attention_maps = torch.sqrt(attention_maps.cpu() / attention_maps.max().item())
 
-                # get heat attention maps
-                heat_attention_maps = generate_heatmap(attention_maps)
+            #     # get heat attention maps
+            #     heat_attention_maps = generate_heatmap(attention_maps)
 
-                # raw_image, heat_attention, raw_attention
-                raw_image = X.cpu() * STD + MEAN
-                heat_attention_image = raw_image * 0.5 + heat_attention_maps * 0.5
-                raw_attention_image = raw_image * attention_maps
+            #     # raw_image, heat_attention, raw_attention
+            #     raw_image = X.cpu() * STD + MEAN
+            #     heat_attention_image = raw_image * 0.5 + heat_attention_maps * 0.5
+            #     raw_attention_image = raw_image * attention_maps
 
-                for batch_idx in range(X.size(0)):
-                    rimg = ToPILImage(raw_image[batch_idx])
-                    raimg = ToPILImage(raw_attention_image[batch_idx])
-                    haimg = ToPILImage(heat_attention_image[batch_idx])
-                    rimg.save(os.path.join(savepath, '%03d_raw.jpg' % (i * options.batch_size + batch_idx)))
-                    raimg.save(os.path.join(savepath, '%03d_raw_atten.jpg' % (i * options.batch_size + batch_idx)))
-                    haimg.save(os.path.join(savepath, '%03d_heat_atten.jpg' % (i * options.batch_size + batch_idx)))
+                # for batch_idx in range(X.size(0)):
+                #     rimg = ToPILImage(raw_image[batch_idx])
+                #     raimg = ToPILImage(raw_attention_image[batch_idx])
+                #     haimg = ToPILImage(heat_attention_image[batch_idx])
+                #     rimg.save(os.path.join(savepath, '%03d_raw.jpg' % (i * options.batch_size + batch_idx)))
+                #     raimg.save(os.path.join(savepath, '%03d_raw_atten.jpg' % (i * options.batch_size + batch_idx)))
+                #     haimg.save(os.path.join(savepath, '%03d_heat_atten.jpg' % (i * options.batch_size + batch_idx)))
 
             # Top K
-            epoch_raw_acc,pred_list= accuracy(y_pred_raw, y,topk=(1, 3))
-            epoch_ref_acc,_ = accuracy(y_pred, y,topk=(1, 3))
+            epoch_raw_acc,pred_list= test_accuracy(y_pred_raw, y,topk=(1, 3))
+            epoch_ref_acc,_ = test_accuracy(y_pred, y,topk=(1, 3))
             results += list(pred_list[0].cpu().numpy())
             ground_truths += list(y.cpu().numpy())
             avg_accuracy += epoch_raw_acc[0].item() 

@@ -95,22 +95,3 @@ def test_accuracy(output, target, topk=(1,)):
         res.append(correct_k.mul_(100. / batch_size))
 
     return np.array(res),pred
-def generate_data_svg_plots(data_mode,metadata_file):
-    data = pd.read_csv(metadata_file)
-    data =data.sort_values(by=['race'])
-    
-    fig = px.histogram(data, x="race", 
-                    histfunc="sum", 
-                    color=data.race,
-                    color_discrete_sequence=['#ED553B','#F6D55C','#3CAEA3','#20639B'], 
-                    barmode="group")
-
-    fig.update_yaxes(title_text="Number of Images")
-    fig.update_xaxes(title_text="Race")
-    fig.update_layout(title_text="RFW %s Image's Race Distribution"%data_mode)
-    file_name = "source/RFW_{}_Images_Race_Distribution.svg".format(data_mode)
-    fig.write_image(file_name)
-
-# generate_data_svg_plots('Train','data/RFW_Train40k_Images_Metada.csv')
-# generate_data_svg_plots('Test','data/RFW_Test_Images_Metadata.csv')
-# generate_data_svg_plots('Validation','data/RFW_Val4k_Images_Metadata.csv')
