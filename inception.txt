@@ -1,0 +1,107 @@
+2019-12-03 22:11:15,519: INFO: [train_sota.py:151]: 
+2019-12-03 22:11:15,520: INFO: [train_sota.py:153]: Start training: Total epochs: 20, Batch size: 16, Training size: 39787, Validation size: 4000
+PyTorch Version:  1.1.0
+Torchvision Version:  0.3.0
+Epoch 0/24
+----------
+train Loss: 0.6404 Acc: 0.8265
+val Loss: 0.2562 Acc: 0.9108
+Epoch 1/24
+----------
+train Loss: 0.3518 Acc: 0.9128
+val Loss: 0.2404 Acc: 0.9140
+Epoch 2/24
+----------
+train Loss: 0.2346 Acc: 0.9451
+val Loss: 0.2512 Acc: 0.9143
+Epoch 3/24
+----------
+train Loss: 0.1547 Acc: 0.9637
+val Loss: 0.2534 Acc: 0.9200
+Epoch 4/24
+----------
+train Loss: 0.1046 Acc: 0.9755
+val Loss: 0.2910 Acc: 0.9240
+Epoch 5/24
+----------
+train Loss: 0.0787 Acc: 0.9820
+val Loss: 0.3069 Acc: 0.9133
+Epoch 6/24
+----------
+train Loss: 0.0600 Acc: 0.9871
+val Loss: 0.3136 Acc: 0.9223
+Epoch 7/24
+----------
+train Loss: 0.0436 Acc: 0.9902
+val Loss: 0.3569 Acc: 0.9163
+Epoch 8/24
+----------
+train Loss: 0.0392 Acc: 0.9914
+val Loss: 0.3087 Acc: 0.9180
+Epoch 9/24
+----------
+train Loss: 0.0290 Acc: 0.9942
+val Loss: 0.3205 Acc: 0.9235
+Epoch 10/24
+----------
+train Loss: 0.0258 Acc: 0.9944
+val Loss: 0.3608 Acc: 0.9233
+Epoch 11/24
+----------
+train Loss: 0.0188 Acc: 0.9963
+val Loss: 0.3651 Acc: 0.9270
+Epoch 12/24
+----------
+train Loss: 0.0242 Acc: 0.9948
+val Loss: 0.3735 Acc: 0.9218
+Epoch 13/24
+----------
+train Loss: 0.0153 Acc: 0.9970
+val Loss: 0.3801 Acc: 0.9208
+Epoch 14/24
+----------
+train Loss: 0.0087 Acc: 0.9983
+val Loss: 0.3629 Acc: 0.9270
+Epoch 15/24
+----------
+train Loss: 0.0170 Acc: 0.9966
+val Loss: 0.3720 Acc: 0.9238
+Epoch 16/24
+----------
+train Loss: 0.0107 Acc: 0.9979
+val Loss: 0.3598 Acc: 0.9300
+Epoch 17/24
+----------
+train Loss: 0.0083 Acc: 0.9984
+val Loss: 0.3521 Acc: 0.9268
+Epoch 18/24
+----------
+train Loss: 0.0095 Acc: 0.9981
+val Loss: 0.3912 Acc: 0.9243
+Epoch 19/24
+----------
+train Loss: 0.0100 Acc: 0.9980
+val Loss: 0.4089 Acc: 0.9337
+Epoch 20/24
+----------
+train Loss: 0.0061 Acc: 0.9986
+val Loss: 0.3852 Acc: 0.9290
+Epoch 21/24
+----------
+train Loss: 0.0114 Acc: 0.9973
+val Loss: 0.3782 Acc: 0.9268
+Epoch 22/24
+----------
+train Loss: 0.0080 Acc: 0.9983
+val Loss: 0.4033 Acc: 0.9300
+Epoch 23/24
+----------
+train Loss: 0.0063 Acc: 0.9986
+val Loss: 0.4161 Acc: 0.9305
+Epoch 24/24
+----------
+train Loss: 0.0066 Acc: 0.9985
+val Loss: 0.3858 Acc: 0.9335
+Training complete in 105m 43s
+Best val Acc: 0.933750
+load best model weights

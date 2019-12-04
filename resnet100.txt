@@ -1,0 +1,10 @@
+PyTorch Version:  1.1.0
+Torchvision Version:  0.3.0
+Traceback (most recent call last):
+  File "train_sota.py", line 265, in <module>
+    main()
+  File "train_sota.py", line 108, in main
+    net, image_size = initialize_model(options.model_name, num_classes, feature_extract=False, use_pretrained=True)
+  File "train_sota.py", line 33, in initialize_model
+    model_ft = models.resnet100(pretrained=use_pretrained)
+AttributeError: module 'torchvision.models' has no attribute 'resnet100'
