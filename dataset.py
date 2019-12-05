@@ -30,8 +30,6 @@ class CustomDataset(Dataset):
 
     def __getitem__(self, item):
         path = os.path.join(self.data_root,self.data_path[item])
- 
-
         image = Image.open(path).convert('RGB')  # (C, H, W)
         image = self.transform(image)
        

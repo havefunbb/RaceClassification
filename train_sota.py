@@ -100,6 +100,7 @@ def main():
     (options, args) = parser.parse_args()
 
     logging.basicConfig(format='%(asctime)s: %(levelname)s: [%(filename)s:%(lineno)d]: %(message)s', level=logging.INFO)
+    
     warnings.filterwarnings("ignore")
 
     num_classes = 4
@@ -137,12 +138,11 @@ def main():
                                     std=[0.229, 0.224, 0.225])])
     train_dataset = CustomDataset(data_root='/mnt/HDD/RFW/train/data/',csv_file='data/RFW_Train40k_Images_Metada.csv',transform=transform)
     val_dataset = CustomDataset(data_root='/mnt/HDD/RFW/train/data/',csv_file='data/RFW_Val4k_Images_Metadata.csv',transform=transform)
-    test_dataset = CustomDataset(data_root='/mnt/HDD/RFW/test/data/',csv_file='data/RFW_Test_Images_Metadata.csv',transform=transform)
+   
 
     train_loader = DataLoader(train_dataset, batch_size=options.batch_size, shuffle=True,num_workers=options.workers, pin_memory=True)
     validate_loader = DataLoader(val_dataset, batch_size=options.batch_size * 4, shuffle=False,num_workers=options.workers, pin_memory=True)
-    test_loader = DataLoader(test_dataset, batch_size=options.batch_size * 4, shuffle=False,num_workers=options.workers, pin_memory=True)
-
+    
    # optimizer = torch.optim.SGD(net.parameters(), lr=options.lr, momentum=0.9, weight_decay=0.00001)
     optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
     loss = nn.CrossEntropyLoss()
@@ -241,7 +241,8 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs=25, is_ince
                     'save_dir': options.save_dir,
                     'state_dict': state_dict,
                     'model': model,
-                    'optimizer': optimizer},
+                    'optimizer': optimizer,
+                    'best_acc': best_acc},
                 os.path.join(options.save_dir, '%03d.ckpt' % (epoch + 1)))
             
             
