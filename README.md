@@ -9,20 +9,23 @@ Race Classification for 4 races (African,Asian,Caucasian,South Asian (Indian)) o
 
 ## Dataset Preparation
 
-For race classification we use RFW Train set, we subsample the dataset, yielding about 40.000 images for training. Train set is race balance but not gender balance.
+For race classification we use Racial Faces in the Wild (RFW) Train set and subsample the dataset, yielding about 40.000 images for training. Train set is race balance but not gender balance. To download dataset, you should get permission from this [link](http://whdeng.cn/RFW/index.html).
 
 ![Sampled Dataset Statistics](source/all_data.png)
 
 
 ## Model Train and Test
 
+```cmd
+python train_sota.py --model resnet100
+python train_sota.py --model resnet101
+python train_sota.py --model inception
+```
 
 ```cmd
-
 python test_sota.py --model resnet50 --ckpt models/model.ckpt
 python test_sota.py --model resnet101 --ckpt models/model.ckpt
 python test_sota.py --model inception --ckpt models/model.ckpt
-
 ```
 ## Results
 
