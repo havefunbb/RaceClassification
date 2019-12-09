@@ -1,3 +1,4 @@
+import logging
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -16,7 +17,6 @@ model_urls = {
 def inception_v3(pretrained=False, **kwargs):
     r"""Inception v3 model architecture from
     `"Rethinking the Inception Architecture for Computer Vision" <http://arxiv.org/abs/1512.00567>`_.
-
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
@@ -126,7 +126,7 @@ class Inception3(nn.Module):
             return x, aux
         return x
 
-    def get_features(self):
+    def get_features_mixed_6e(self):
         return nn.Sequential(
             self.Conv2d_1a_3x3,
             self.Conv2d_2a_3x3,
@@ -144,6 +144,43 @@ class Inception3(nn.Module):
             self.Mixed_6d,
             self.Mixed_6e,
         )
+
+    def get_features_mixed_7c(self):
+        return nn.Sequential(
+            self.Conv2d_1a_3x3,
+            self.Conv2d_2a_3x3,
+            self.Conv2d_2b_3x3,
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            self.Conv2d_3b_1x1,
+            self.Conv2d_4a_3x3,
+            nn.MaxPool2d(kernel_size=3, stride=2),
+            self.Mixed_5b,
+            self.Mixed_5c,
+            self.Mixed_5d,
+            self.Mixed_6a,
+            self.Mixed_6b,
+            self.Mixed_6c,
+            self.Mixed_6d,
+            self.Mixed_6e,
+            self.Mixed_7a,
+            self.Mixed_7b,
+            self.Mixed_7c,
+        )
+
+    def load_state_dict(self, state_dict, strict=True):
+        model_dict = self.state_dict()
+        pretrained_dict = {k: v for k, v in state_dict.items()
+                           if k in model_dict and model_dict[k].size() == v.size()}
+
+        if len(pretrained_dict) == len(state_dict):
+            logging.info('%s: All params loaded' % type(self).__name__)
+        else:
+            logging.info('%s: Some params were not loaded:' % type(self).__name__)
+            not_loaded_keys = [k for k in state_dict.keys() if k not in pretrained_dict.keys()]
+            logging.info(('%s, ' * (len(not_loaded_keys) - 1) + '%s') % tuple(not_loaded_keys))
+
+        model_dict.update(pretrained_dict)
+        super(Inception3, self).load_state_dict(model_dict)
 
 
 class InceptionA(nn.Module):

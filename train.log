@@ -1,0 +1,8 @@
+2019-12-09 12:56:55,191: INFO: [inception.py:176]: Inception3: All params loaded
+2019-12-09 12:56:56,512: INFO: [inception.py:176]: Inception3: All params loaded
+2019-12-09 12:56:56,546: INFO: [wsdan.py:97]: WSDAN: using inception_mixed_6e as feature extractor, num_classes: 4, num_attentions: 32
+2019-12-09 12:56:57,961: INFO: [train_wsdan.py:127]: Network weights save to ./models
+2019-12-09 12:56:59,184: INFO: [inception.py:176]: Inception3: All params loaded
+2019-12-09 12:56:59,230: INFO: [train_wsdan.py:183]: 
+2019-12-09 12:56:59,230: INFO: [train_wsdan.py:185]: Start training: Total epochs: 80, Batch size: 16, Training size: 39787, Validation size: 4000
+2019-12-09 12:56:59,231: INFO: [train_wsdan.py:193]: Epoch 001, Learning Rate 0.001

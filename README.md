@@ -17,6 +17,7 @@ For race classification we use Racial Faces in the Wild (RFW) Train set and subs
 ## Model Train and Test
 
 ```cmd
+python train_wsdan.py --save-dir models/wsdan/  
 python train_sota.py --model resnet100
 python train_sota.py --model resnet101
 python train_sota.py --model inception

@@ -4,9 +4,11 @@ Revised: December 2,2019 - Seyma Yucer
 """
 import os
 os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
+
 import time
 import logging
 import warnings
+from tqdm import tqdm
 import numpy as np
 import torch
 import torch.nn as nn
@@ -16,10 +18,20 @@ from torch.utils.data import DataLoader
 from optparse import OptionParser
 from torchvision.datasets import ImageFolder
 from torchvision import transforms, utils,datasets
-from utils import accuracy
-from models import *
+from utils import CenterLoss, AverageMeter, TopKAccuracyMetric, ModelCheckpoint, batch_augment
+from models import WSDAN,inception_v3
 from dataset import *
+device = torch.device("cuda")
 
+# General loss functions
+cross_entropy_loss = nn.CrossEntropyLoss()
+center_loss = CenterLoss()
+
+# loss and metric
+loss_container = AverageMeter(name='loss')
+raw_metric = TopKAccuracyMetric(topk=(1, 3))
+crop_metric = TopKAccuracyMetric(topk=(1, 3))
+drop_metric = TopKAccuracyMetric(topk=(1, 3))
 
 def main():
     parser = OptionParser()
@@ -37,31 +49,84 @@ def main():
                       help='learning rate (default: 1e-3)')
     parser.add_option('--sf', '--save-freq', dest='save_freq', default=1, type='int',
                       help='saving frequency of .ckpt models (default: 1)')
-    parser.add_option('--sd', '--save-dir', dest='save_dir', default='./models',
-                      help='saving directory of .ckpt models (default: ./models)')
+    parser.add_option('--sd', '--save-dir', dest='save_dir', default='./models/wsdan/',
+                      help='saving directory of .ckpt models (default: ./models/wsdan)')
+    parser.add_option('--ln', '--log-name', dest='log_name', default='train.log',
+                      help='log name  (default: train.log)')
+    parser.add_option('--mn', '--model-name', dest='model_name', default='model.ckpt',
+                      help='model name  (default:model.ckpt)')
     parser.add_option('--init', '--initial-training', dest='initial_training', default=1, type='int',
                       help='train from 1-beginning or 0-resume training (default: 1)')
-    # parser.add_option('--model', '--model-training', dest='model_training', default='wsdan',
-    #                   help='it can be wsdan,resnet50,resnet100,inception')
+ 
 
     (options, args) = parser.parse_args()
 
-    logging.basicConfig(format='%(asctime)s: %(levelname)s: [%(filename)s:%(lineno)d]: %(message)s', level=logging.INFO)
+    ##################################
+    # Initialize saving directory
+    ##################################
+    if not os.path.exists(options.save_dir):
+        os.makedirs(options.save_dir)
+
+    ##################################
+    # Logging setting
+    ##################################
+    logging.basicConfig(
+        filename=os.path.join( options.save_dir, options.log_name),
+        filemode='w',
+        format='%(asctime)s: %(levelname)s: [%(filename)s:%(lineno)d]: %(message)s',
+        level=logging.INFO)
     warnings.filterwarnings("ignore")
 
     ##################################
+    # Load dataset
+    ##################################
+    image_size = (400,400)
+    num_classes = 4
+    transform = transforms.Compose([transforms.Resize(size=image_size),
+                                    transforms.ToTensor(),
+                                    transforms.Normalize(mean=[0.485, 0.456, 0.406], 
+                                    std=[0.229, 0.224, 0.225])])
+    train_dataset = CustomDataset(data_root='/mnt/HDD/RFW/train/data/',csv_file='data/RFW_Train40k_Images_Metada.csv',transform=transform)
+    val_dataset = CustomDataset(data_root='/mnt/HDD/RFW/train/data/',csv_file='data/RFW_Val4k_Images_Metadata.csv',transform=transform)
+    test_dataset = CustomDataset(data_root='/mnt/HDD/RFW/test/data/',csv_file='data/RFW_Test_Images_Metadata.csv',transform=transform)
+
+    train_loader = DataLoader(train_dataset, batch_size=options.batch_size, shuffle=True,num_workers=options.workers, pin_memory=True)
+    validate_loader = DataLoader(val_dataset, batch_size=options.batch_size * 4, shuffle=False,num_workers=options.workers, pin_memory=True)
+    test_loader = DataLoader(test_dataset, batch_size=options.batch_size * 4, shuffle=False,num_workers=options.workers, pin_memory=True)
+    
+    ##################################
     # Initialize model
     ##################################
-    image_size = (400, 400)
-    num_classes = 4
-    num_attentions = 8
+    logs = {}
     start_epoch = 0
-
+    num_attentions = 32
     feature_net = inception_v3(pretrained=True)
-    net = WSDAN(num_classes=num_classes, M=num_attentions, net=feature_net)
+    net = WSDAN(num_classes=num_classes, M=num_attentions, net='inception_mixed_6e', pretrained=True)
 
-     
-    #....
+    # feature_center: size of (#classes, #attention_maps * #channel_features)
+    feature_center = torch.zeros(num_classes, num_attentions * net.num_features).to(device)
+   
+    if options.ckpt:
+        # Load ckpt and get state_dict
+        checkpoint = torch.load(options.ckpt)
+
+        # Get epoch and some logs
+        logs = checkpoint['logs']
+        start_epoch = int(logs['epoch'])
+
+        # Load weights
+        state_dict = checkpoint['state_dict']
+        net.load_state_dict(state_dict)
+        logging.info('Network loaded from {}'.format(options.ckpt))
+
+        # load feature center
+        if 'feature_center' in checkpoint:
+            feature_center = checkpoint['feature_center'].to(device)
+            logging.info('feature_center loaded from {}'.format(options.ckpt))
+
+    logging.info('Network weights save to {}'.format(options.save_dir))
+    feature_net = inception_v3(pretrained=True)
+ 
     if options.ckpt:
         ckpt = options.ckpt
 
@@ -83,44 +148,34 @@ def main():
             feature_center = checkpoint['feature_center'].to(torch.device("cuda"))
             logging.info('feature_center loaded from {}'.format(options.ckpt))
 
-    ##################################
-    # Initialize saving directory
-    ##################################
-    save_dir = options.save_dir
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-
-    ##################################
+      ##################################
     # Use cuda
     ##################################
-    cudnn.benchmark = True
-    net.to(torch.device("cuda"))
-    net = nn.DataParallel(net)
+    net.to(device)
+    if torch.cuda.device_count() > 1:
+        net = nn.DataParallel(net)
 
     ##################################
-    # Load dataset
+    # Optimizer, LR Scheduler
     ##################################
-   
-    transform = transforms.Compose([transforms.Resize(size=image_size),
-                                    transforms.ToTensor(),
-                                    transforms.Normalize(mean=[0.485, 0.456, 0.406], 
-                                    std=[0.229, 0.224, 0.225])])
-    train_dataset = CustomDataset(data_root='/mnt/HDD/RFW/train/data/',csv_file='data/RFW_Train40k_Images_Metada.csv',transform=transform)
-    val_dataset = CustomDataset(data_root='/mnt/HDD/RFW/train/data/',csv_file='data/RFW_Val4k_Images_Metadata.csv',transform=transform)
-    test_dataset = CustomDataset(data_root='/mnt/HDD/RFW/test/data/',csv_file='data/RFW_Test_Images_Metadata.csv',transform=transform)
+    learning_rate = logs['lr'] if 'lr' in logs else options.lr
+    optimizer = torch.optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=1e-5)
 
-    train_loader = DataLoader(train_dataset, batch_size=options.batch_size, shuffle=True,num_workers=options.workers, pin_memory=True)
-    validate_loader = DataLoader(val_dataset, batch_size=options.batch_size * 4, shuffle=False,num_workers=options.workers, pin_memory=True)
-    test_loader = DataLoader(test_dataset, batch_size=options.batch_size * 4, shuffle=False,num_workers=options.workers, pin_memory=True)
-
-    optimizer = torch.optim.SGD(net.parameters(), lr=options.lr, momentum=0.9, weight_decay=0.00001)
-    loss = nn.CrossEntropyLoss()
-
-    ##################################
-    # Learning rate scheduling
-    ##################################
-    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=2)
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.9, patience=2)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.9)
+
+    ##################################
+    # ModelCheckpoint
+    ##################################
+    callback_monitor = 'val_{}'.format(raw_metric.name)
+    callback = ModelCheckpoint(savepath=os.path.join(options.save_dir, options.model_name),
+                               monitor=callback_monitor,
+                               mode='max')
+    if callback_monitor in logs:
+        callback.set_best_score(logs[callback_monitor])
+    else:
+        callback.reset()
+
 
     ##################################
     # TRAINING
@@ -130,273 +185,178 @@ def main():
                  format(options.epochs, options.batch_size, len(train_dataset), len(val_dataset)))
 
     for epoch in range(start_epoch, options.epochs):
-        train(options=options,
-            epoch=epoch,
+        callback.on_epoch_begin()
+
+        logs['epoch'] = epoch + 1
+        logs['lr'] = optimizer.param_groups[0]['lr']
+
+        logging.info('Epoch {:03d}, Learning Rate {:g}'.format(epoch + 1, optimizer.param_groups[0]['lr']))
+
+        pbar = tqdm(total=len(train_loader), unit=' batches')
+        pbar.set_description('Epoch {}/{}'.format(epoch + 1, options.epochs))
+
+        train(logs=logs,
               data_loader=train_loader,
               net=net,
               feature_center=feature_center,
-              loss=loss,
               optimizer=optimizer,
-              save_freq=options.save_freq,
-              save_dir=options.save_dir,
-              verbose=options.verbose)
-        val_loss = validate(data_loader=validate_loader,
-                            net=net,
-                            loss=loss,
-                            verbose=options.verbose,epoch=epoch)
-        scheduler.step()
+              pbar=pbar)
+        validate(logs=logs,
+                 data_loader=validate_loader,
+                 net=net,
+                 pbar=pbar)
 
+        if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+            scheduler.step(logs['val_loss'])
+        else:
+            scheduler.step()
+
+        callback.on_epoch_end(logs, net, feature_center=feature_center)
+        pbar.close()
 
 def train(**kwargs):
     # Retrieve training configuration
-    options = kwargs['options']
+    logs = kwargs['logs']
     data_loader = kwargs['data_loader']
     net = kwargs['net']
-    loss = kwargs['loss']
-    optimizer = kwargs['optimizer']
     feature_center = kwargs['feature_center']
-    epoch = kwargs['epoch']
-    save_freq = kwargs['save_freq']
-    save_dir = kwargs['save_dir']
-    verbose = kwargs['verbose']
-
-    # Attention Regularization: LA Loss
-    l2_loss = nn.MSELoss()
-
-    # Default Parameters
-    beta = 1e-4
-    theta_c = 0.5
-    theta_d = 0.5
-    crop_size = (256, 256)  # size of cropped images for 'See Better'
+    optimizer = kwargs['optimizer']
+    pbar = kwargs['pbar']
 
     # metrics initialization
-    batches = 0
-    epoch_loss = np.array([0, 0, 0], dtype=float)  # Loss on Raw/Crop/Drop Images
-    epoch_acc = np.array([[0, 0, 0],
-                          [0, 0, 0],
-                          [0, 0, 0]], dtype=float)  # Top-1/3/5 Accuracy for Raw/Crop/Drop Images
+    loss_container.reset()
+    raw_metric.reset()
+    crop_metric.reset()
+    drop_metric.reset()
 
     # begin training
     start_time = time.time()
-    logging.info('Epoch %03d, Learning Rate %g' % (epoch + 1, optimizer.param_groups[0]['lr']))
     net.train()
     for i, (X, y) in enumerate(data_loader):
-        batch_start = time.time()
+        optimizer.zero_grad()
+
         # obtain data for training
-        X = X.to(torch.device("cuda"))
-        y = y.to(torch.device("cuda"))
+        X = X.to(device)
+        y = y.to(device)
 
         ##################################
         # Raw Image
         ##################################
-        
-        y_pred, feature_matrix, attention_map = net(X)
-        batch_loss = loss(y_pred, y) + l2_loss(feature_matrix, feature_center[y])
-        # loss
-        epoch_loss[0] += batch_loss.item()
+        # raw images forward
+        y_pred_raw, feature_matrix, attention_map = net(X)
 
-        # backward
-        optimizer.zero_grad()
-        batch_loss.backward()
-        optimizer.step()
-        # metrics: top-1, top-3, top-5 error
-        with torch.no_grad():
-            
-            #print(epoch_acc[0][0],acc[0].numpy()[0])
-            if epoch == 0:
-                epoch_acc[0]= accuracy(y_pred, y, topk=(1, 2, 3))
-            else:
-                epoch_acc[0] = epoch_acc[0]+accuracy(y_pred, y, topk=(1, 2, 3))
         # Update Feature Center
-        feature_center[y] += beta * (feature_matrix.detach() - feature_center[y])
+        feature_center_batch = F.normalize(feature_center[y], dim=-1)
+        feature_center[y] += 5e-2 * (feature_matrix.detach() - feature_center_batch)
+
         ##################################
         # Attention Cropping
         ##################################
         with torch.no_grad():
-            crop_mask = F.upsample_bilinear(attention_map, size=(X.size(2), X.size(3))) > theta_c
-            crop_images = []
-            for batch_index in range(crop_mask.size(0)):
-                nonzero_indices = torch.nonzero(crop_mask[batch_index, 0, ...])
-                height_min = nonzero_indices[:, 0].min()
-                height_max = nonzero_indices[:, 0].max()
-                width_min = nonzero_indices[:, 1].min()
-                width_max = nonzero_indices[:, 1].max()
-                crop_images.append(F.upsample_bilinear(X[batch_index:batch_index + 1, :, height_min:height_max, width_min:width_max], size=crop_size))
-            crop_images = torch.cat(crop_images, dim=0)
+            crop_images = batch_augment(X, attention_map[:, :1, :, :], mode='crop', theta=(0.4, 0.6), padding_ratio=0.1)
 
         # crop images forward
-        y_pred, _, _ = net(crop_images)
-
-        # loss
-        batch_loss = loss(y_pred, y)
-        epoch_loss[1] += batch_loss.item()
-
-        # backward
-        optimizer.zero_grad()
-        batch_loss.backward()
-        optimizer.step()
-
-        # metrics: top-1, top-3, top-5 error
-        with torch.no_grad():
-            if epoch==0:
-                epoch_acc[1] = accuracy(y_pred, y, topk=(1, 2, 3))
-            else:
-                epoch_acc[1] = epoch_acc[1] + accuracy(y_pred, y, topk=(1, 2, 3))
+        y_pred_crop, _, _ = net(crop_images)
 
         ##################################
         # Attention Dropping
         ##################################
         with torch.no_grad():
-            drop_mask = F.upsample_bilinear(attention_map, size=(X.size(2), X.size(3))) <= theta_d
-            drop_images = X * drop_mask.float()
+            drop_images = batch_augment(X, attention_map[:, 1:, :, :], mode='drop', theta=(0.2, 0.5))
 
         # drop images forward
-        y_pred, _, _ = net(drop_images)
+        y_pred_drop, _, _ = net(drop_images)
 
         # loss
-        batch_loss = loss(y_pred, y)
-        epoch_loss[2] += batch_loss.item()
+        batch_loss = cross_entropy_loss(y_pred_raw, y) / 3. + \
+                     cross_entropy_loss(y_pred_crop, y) / 3. + \
+                     cross_entropy_loss(y_pred_drop, y) / 3. + \
+                     center_loss(feature_matrix, feature_center_batch)
 
         # backward
-        optimizer.zero_grad()
         batch_loss.backward()
         optimizer.step()
 
-        # metrics: top-1, top-3, top-5 error
+        # metrics: loss and top-1,5 error
         with torch.no_grad():
-            if epoch == 0:
-                epoch_acc[2] = accuracy(y_pred, y, topk=(1, 2, 3))
-            else:
-                epoch_acc[2] = epoch_acc[2]+accuracy(y_pred, y, topk=(1, 2, 3))
+            epoch_loss = loss_container(batch_loss.item())
+            epoch_raw_acc = raw_metric(y_pred_raw, y)
+            epoch_crop_acc = crop_metric(y_pred_crop, y)
+            epoch_drop_acc = drop_metric(y_pred_drop, y)
 
-            # end of this batch
-        batches += 1
-        batch_end = time.time()
-        if (i + 1) % verbose == 0:
-            logging.info('\tBatch %d: (Raw) Loss %.4f, Accuracy: (%.2f, %.2f, %.2f), (Crop) Loss %.4f, Accuracy: (%.2f, %.2f, %.2f), (Drop) Loss %.4f, Accuracy: (%.2f, %.2f, %.2f), Time %3.2f' %
-                    (i + 1,
-                    epoch_loss[0] / batches, epoch_acc[0, 0] / batches, epoch_acc[0, 1] / batches, epoch_acc[0, 2] / batches,
-                    epoch_loss[1] / batches, epoch_acc[1, 0] / batches, epoch_acc[1, 1] / batches, epoch_acc[1, 2] / batches,
-                    epoch_loss[2] / batches, epoch_acc[2, 0] / batches, epoch_acc[2, 1] / batches, epoch_acc[2, 2] / batches,
-                    batch_end - batch_start))
-
-
-    
-
-       
-
-    # save checkpoint model
-    if epoch % save_freq == 0:
-        state_dict = net.module.state_dict()
-        for key in state_dict.keys():
-            state_dict[key] = state_dict[key].cpu()
-        torch.save({
-            'epoch': epoch,
-            'save_dir': save_dir,
-            'state_dict': state_dict,
-            'model': net,
-            'optimizer': optimizer,
-            'feature_center': feature_center.cpu()},
-
-            os.path.join(save_dir, '%03d.ckpt' % (epoch + 1)))
+        # end of this batch
+        batch_info = 'Loss {:.4f}, Raw Acc ({:.2f}, {:.2f}), Crop Acc ({:.2f}, {:.2f}), Drop Acc ({:.2f}, {:.2f})'.format(
+            epoch_loss, epoch_raw_acc[0], epoch_raw_acc[1],
+            epoch_crop_acc[0], epoch_crop_acc[1], epoch_drop_acc[0], epoch_drop_acc[1])
+        pbar.update()
+        pbar.set_postfix_str(batch_info)
 
     # end of this epoch
+    logs['train_{}'.format(loss_container.name)] = epoch_loss
+    logs['train_raw_{}'.format(raw_metric.name)] = epoch_raw_acc
+    logs['train_crop_{}'.format(crop_metric.name)] = epoch_crop_acc
+    logs['train_drop_{}'.format(drop_metric.name)] = epoch_drop_acc
+    logs['train_info'] = batch_info
     end_time = time.time()
 
-    # metrics for average
-    epoch_loss /= batches
-    epoch_acc /= batches
-
-    # show information for this epoch
-    logging.info('Train: (Raw) Loss %.4f, Accuracy: (%.2f, %.2f, %.2f), (Crop) Loss %.4f, Accuracy: (%.2f, %.2f, %.2f), (Drop) Loss %.4f, Accuracy: (%.2f, %.2f, %.2f), Time %3.2f'%
-                 (epoch_loss[0], epoch_acc[0, 0], epoch_acc[0, 1], epoch_acc[0, 2],
-                  epoch_loss[1], epoch_acc[1, 0], epoch_acc[1, 1], epoch_acc[1, 2],
-                  epoch_loss[2], epoch_acc[2, 0], epoch_acc[2, 1], epoch_acc[2, 2],
-                  end_time - start_time))
+    # write log for this epoch
+    logging.info('Train: {}, Time {:3.2f}'.format(batch_info, end_time - start_time))
 
 
 def validate(**kwargs):
     # Retrieve training configuration
+    logs = kwargs['logs']
     data_loader = kwargs['data_loader']
     net = kwargs['net']
-    loss = kwargs['loss']
-    verbose = kwargs['verbose']
-    epoch = kwargs['epoch']
-
-    # Default Parameters
-    theta_c = 0.5
-    crop_size = (256, 256)  # size of cropped images for 'See Better'
+    pbar = kwargs['pbar']
 
     # metrics initialization
-    batches = 0
-    epoch_loss = 0
-    epoch_acc = np.array([0, 0, 0], dtype='float') # top - 1, 2, 3
+    loss_container.reset()
+    raw_metric.reset()
 
     # begin validation
     start_time = time.time()
     net.eval()
     with torch.no_grad():
         for i, (X, y) in enumerate(data_loader):
-            batch_start = time.time()
-
             # obtain data
-            X = X.to(torch.device("cuda"))
-            y = y.to(torch.device("cuda"))
+            X = X.to(device)
+            y = y.to(device)
 
             ##################################
             # Raw Image
             ##################################
-            y_pred_raw, feature_matrix, attention_map = net(X)
+            y_pred_raw, _, attention_map = net(X)
 
             ##################################
             # Object Localization and Refinement
             ##################################
-            crop_mask = F.upsample_bilinear(attention_map, size=(X.size(2), X.size(3))) > theta_c
-            crop_images = []
-            for batch_index in range(crop_mask.size(0)):
-                nonzero_indices = torch.nonzero(crop_mask[batch_index, 0, ...])
-                height_min = nonzero_indices[:, 0].min()
-                height_max = nonzero_indices[:, 0].max()
-                width_min = nonzero_indices[:, 1].min()
-                width_max = nonzero_indices[:, 1].max()
-                crop_images.append(F.upsample_bilinear(X[batch_index:batch_index + 1, :, height_min:height_max, width_min:width_max], size=crop_size))
-            crop_images = torch.cat(crop_images, dim=0)
-
+            crop_images = batch_augment(X, attention_map, mode='crop', theta=0.1, padding_ratio=0.05)
             y_pred_crop, _, _ = net(crop_images)
 
-            # final prediction
-            y_pred = (y_pred_raw + y_pred_crop) / 2
+            ##################################
+            # Final prediction
+            ##################################
+            y_pred = (y_pred_raw + y_pred_crop) / 2.
 
             # loss
-            batch_loss = loss(y_pred, y)
-            epoch_loss += batch_loss.item()
-            if epoch == 0:
-                epoch_acc = accuracy(y_pred, y, topk=(1, 2, 3))
-            else:
-            # metrics: top-1, top-3, top-5 error
-                epoch_acc = epoch_acc+ accuracy(y_pred, y, topk=(1, 2, 3))
+            batch_loss = cross_entropy_loss(y_pred, y)
+            epoch_loss = loss_container(batch_loss.item())
 
-            # end of this batch
-            batches += 1
-            batch_end = time.time()
-            if (i + 1) % verbose == 0:
-                logging.info('\tBatch %d: Loss %.5f, Accuracy: Top-1 %.2f, Top-3 %.2f, Top-5 %.2f, Time %3.2f' %
-                         (i + 1, epoch_loss / batches, epoch_acc[0] / batches, epoch_acc[1] / batches, epoch_acc[2] / batches, batch_end - batch_start))
-
+            # metrics: top-1,5 error
+            epoch_acc = raw_metric(y_pred, y)
 
     # end of validation
+    logs['val_{}'.format(loss_container.name)] = epoch_loss
+    logs['val_{}'.format(raw_metric.name)] = epoch_acc
     end_time = time.time()
 
-    # metrics for average
-    epoch_loss /= batches
-    epoch_acc /= batches
+    batch_info = 'Val Loss {:.4f}, Val Acc ({:.2f}, {:.2f})'.format(epoch_loss, epoch_acc[0], epoch_acc[1])
+    pbar.set_postfix_str('{}, {}'.format(logs['train_info'], batch_info))
 
-    # show information for this epoch
-    logging.info('Valid: Loss %.5f,  Accuracy: Top-1 %.2f, Top-3 %.2f, Top-5 %.2f, Time %3.2f'%
-                 (epoch_loss, epoch_acc[0], epoch_acc[1], epoch_acc[2], end_time - start_time))
+    # write log for this epoch
+    logging.info('Valid: {}, Time {:3.2f}'.format(batch_info, end_time - start_time))
     logging.info('')
-
-    return epoch_loss
 
 
 if __name__ == '__main__':
