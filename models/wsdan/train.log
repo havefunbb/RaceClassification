@@ -6,3 +6,7 @@
 2019-12-09 12:59:27,303: INFO: [train_wsdan.py:183]: 
 2019-12-09 12:59:27,303: INFO: [train_wsdan.py:185]: Start training: Total epochs: 80, Batch size: 16, Training size: 39787, Validation size: 4000
 2019-12-09 12:59:27,303: INFO: [train_wsdan.py:193]: Epoch 001, Learning Rate 0.001
+2019-12-09 13:16:43,059: INFO: [train_wsdan.py:303]: Train: Loss 1.5578, Raw Acc (78.55, 97.58), Crop Acc (70.91, 96.16), Drop Acc (70.14, 96.19), Time 1035.75
+2019-12-09 13:17:06,654: INFO: [train_wsdan.py:358]: Valid: Val Loss 0.9428, Val Acc (79.45, 98.47), Time 23.59
+2019-12-09 13:17:06,654: INFO: [train_wsdan.py:359]: 
+2019-12-09 13:17:06,700: INFO: [train_wsdan.py:193]: Epoch 002, Learning Rate 0.001

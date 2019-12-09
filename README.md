@@ -21,12 +21,14 @@ We will share pre-trained models in the models directory.
 
 ```cmd
 python train_wsdan.py --save-dir models/wsdan/  
+#state of the art algorithms training
 python train_sota.py --model resnet100
 python train_sota.py --model resnet101
 python train_sota.py --model inception
 ```
 
 ```cmd
+python test_wsdan.py --evalckpt models/wsdan/003.ckpt 
 python test_sota.py --model resnet50 --ckpt models/model.ckpt
 python test_sota.py --model resnet101 --ckpt models/model.ckpt
 python test_sota.py --model inception --ckpt models/model.ckpt
