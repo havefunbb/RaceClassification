@@ -1,5 +1,7 @@
 # RaceClassification
-Race Classification for 4 races (African,Asian,Caucasian,South Asian (Indian)) on pytorch
+This repository does race classification using 4 state-of-the-art models, including Resnet50,Resnet101,InceptionNet and WS-DAN (Fine-Grained Visual Classification). (_Hu et al._, ["See Better Before Looking Closer: Weakly Supervised Data Augmentation Network for Fine-Grained Visual Classification"](https://arxiv.org/abs/1901.09891v2), arXiv:1901.09891)
+
+We encounter 4 races; African,Asian,Caucasian,South Asian (Indian)
 
 ## System Requirements
 
@@ -9,7 +11,8 @@ Race Classification for 4 races (African,Asian,Caucasian,South Asian (Indian)) o
 
 ## Dataset Preparation
 
-For race classification we use Racial Faces in the Wild (RFW) Train set and subsample the dataset, yielding about 40.000 images for training. Train set is race balance but not gender balance. To download dataset, you should get permission from this [link](http://whdeng.cn/RFW/index.html).
+We use Racial Faces in the Wild (RFW) dataset for training and test. We subsample the dataset, yielding about 40.000 images for training. Train set is race balance but not gender balance. To download dataset,you should get permission from this [link](http://whdeng.cn/RFW/index.html).
+We will share pre-trained models in the models directory.
 
 ![Sampled Dataset Statistics](source/all_data.png)
 
