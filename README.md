@@ -42,6 +42,6 @@ python test_sota.py --model inception --ckpt models/model.ckpt
 | Inception  | 96,06   | 88,42 | 87,07     | 86,06  | 89,4025 |
 | WSDAN      | 97,77   | 93,84 | 94,48     | 88,82  | 93,7275 |
 
-### WSDAN Confusion Matrix
+### Confusion Matrices
 
 ![Classifiers Confusion Matrices](source/classifiers_cf.png)
