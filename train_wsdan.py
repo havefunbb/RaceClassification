@@ -80,7 +80,7 @@ def main():
     ##################################
     # Load dataset
     ##################################
-    image_size = (400,400)
+    image_size = (256,256)
     num_classes = 4
     transform = transforms.Compose([transforms.Resize(size=image_size),
                                     transforms.ToTensor(),

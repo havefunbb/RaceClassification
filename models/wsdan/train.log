@@ -1,12 +1,40 @@
-2019-12-09 12:59:23,326: INFO: [inception.py:176]: Inception3: All params loaded
-2019-12-09 12:59:24,588: INFO: [inception.py:176]: Inception3: All params loaded
-2019-12-09 12:59:24,619: INFO: [wsdan.py:97]: WSDAN: using inception_mixed_6e as feature extractor, num_classes: 4, num_attentions: 32
-2019-12-09 12:59:26,028: INFO: [train_wsdan.py:127]: Network weights save to models/wsdan400_400/
-2019-12-09 12:59:27,257: INFO: [inception.py:176]: Inception3: All params loaded
-2019-12-09 12:59:27,303: INFO: [train_wsdan.py:183]: 
-2019-12-09 12:59:27,303: INFO: [train_wsdan.py:185]: Start training: Total epochs: 80, Batch size: 16, Training size: 39787, Validation size: 4000
-2019-12-09 12:59:27,303: INFO: [train_wsdan.py:193]: Epoch 001, Learning Rate 0.001
-2019-12-09 13:16:43,059: INFO: [train_wsdan.py:303]: Train: Loss 1.5578, Raw Acc (78.55, 97.58), Crop Acc (70.91, 96.16), Drop Acc (70.14, 96.19), Time 1035.75
-2019-12-09 13:17:06,654: INFO: [train_wsdan.py:358]: Valid: Val Loss 0.9428, Val Acc (79.45, 98.47), Time 23.59
-2019-12-09 13:17:06,654: INFO: [train_wsdan.py:359]: 
-2019-12-09 13:17:06,700: INFO: [train_wsdan.py:193]: Epoch 002, Learning Rate 0.001
+2019-12-09 13:53:32,888: INFO: [inception.py:176]: Inception3: All params loaded
+2019-12-09 13:53:34,201: INFO: [inception.py:176]: Inception3: All params loaded
+2019-12-09 13:53:34,232: INFO: [wsdan.py:97]: WSDAN: using inception_mixed_6e as feature extractor, num_classes: 4, num_attentions: 32
+2019-12-09 13:53:35,644: INFO: [train_wsdan.py:127]: Network weights save to models/wsdan/
+2019-12-09 13:53:36,985: INFO: [inception.py:176]: Inception3: All params loaded
+2019-12-09 13:53:37,032: INFO: [train_wsdan.py:183]: 
+2019-12-09 13:53:37,033: INFO: [train_wsdan.py:185]: Start training: Total epochs: 80, Batch size: 16, Training size: 39787, Validation size: 4000
+2019-12-09 13:53:37,034: INFO: [train_wsdan.py:193]: Epoch 001, Learning Rate 0.001
+2019-12-09 14:03:52,505: INFO: [train_wsdan.py:303]: Train: Loss 1.5143, Raw Acc (79.03, 97.84), Crop Acc (70.29, 96.02), Drop Acc (70.04, 96.10), Time 615.47
+2019-12-09 14:04:04,240: INFO: [train_wsdan.py:358]: Valid: Val Loss 0.5804, Val Acc (87.85, 99.62), Time 11.73
+2019-12-09 14:04:04,240: INFO: [train_wsdan.py:359]: 
+2019-12-09 14:04:04,313: INFO: [train_wsdan.py:193]: Epoch 002, Learning Rate 0.001
+2019-12-09 14:14:25,587: INFO: [train_wsdan.py:303]: Train: Loss 0.9372, Raw Acc (87.32, 99.19), Crop Acc (76.15, 97.78), Drop Acc (81.45, 98.49), Time 621.27
+2019-12-09 14:14:36,238: INFO: [train_wsdan.py:358]: Valid: Val Loss 0.5234, Val Acc (89.95, 99.75), Time 10.65
+2019-12-09 14:14:36,238: INFO: [train_wsdan.py:359]: 
+2019-12-09 14:14:36,311: INFO: [train_wsdan.py:193]: Epoch 003, Learning Rate 0.0009
+2019-12-09 14:24:53,891: INFO: [train_wsdan.py:303]: Train: Loss 0.6172, Raw Acc (90.96, 99.55), Crop Acc (78.57, 98.13), Drop Acc (87.24, 99.23), Time 617.58
+2019-12-09 14:25:04,062: INFO: [train_wsdan.py:358]: Valid: Val Loss 0.3123, Val Acc (91.20, 99.78), Time 10.17
+2019-12-09 14:25:04,062: INFO: [train_wsdan.py:359]: 
+2019-12-09 14:25:04,133: INFO: [train_wsdan.py:193]: Epoch 004, Learning Rate 0.0009
+2019-12-09 14:35:18,508: INFO: [train_wsdan.py:303]: Train: Loss 0.4733, Raw Acc (93.10, 99.70), Crop Acc (79.62, 98.39), Drop Acc (90.14, 99.49), Time 614.38
+2019-12-09 14:35:29,116: INFO: [train_wsdan.py:358]: Valid: Val Loss 0.3030, Val Acc (91.62, 99.83), Time 10.61
+2019-12-09 14:35:29,116: INFO: [train_wsdan.py:359]: 
+2019-12-09 14:35:29,189: INFO: [train_wsdan.py:193]: Epoch 005, Learning Rate 0.00081
+2019-12-09 14:45:40,308: INFO: [train_wsdan.py:303]: Train: Loss 0.3674, Raw Acc (94.87, 99.83), Crop Acc (81.96, 98.57), Drop Acc (92.51, 99.73), Time 611.12
+2019-12-09 14:45:50,271: INFO: [train_wsdan.py:358]: Valid: Val Loss 0.4676, Val Acc (88.28, 99.33), Time 9.96
+2019-12-09 14:45:50,271: INFO: [train_wsdan.py:359]: 
+2019-12-09 14:45:50,271: INFO: [train_wsdan.py:193]: Epoch 006, Learning Rate 0.00081
+2019-12-09 14:56:07,810: INFO: [train_wsdan.py:303]: Train: Loss 0.3112, Raw Acc (96.31, 99.90), Crop Acc (83.07, 98.79), Drop Acc (94.12, 99.85), Time 617.54
+2019-12-09 14:56:18,119: INFO: [train_wsdan.py:358]: Valid: Val Loss 0.3022, Val Acc (91.90, 99.80), Time 10.31
+2019-12-09 14:56:18,119: INFO: [train_wsdan.py:359]: 
+2019-12-09 14:56:18,189: INFO: [train_wsdan.py:193]: Epoch 007, Learning Rate 0.000729
+2019-12-09 15:08:25,046: INFO: [train_wsdan.py:303]: Train: Loss 0.2421, Raw Acc (97.58, 99.96), Crop Acc (85.11, 98.97), Drop Acc (95.69, 99.92), Time 726.86
+2019-12-09 15:08:35,311: INFO: [train_wsdan.py:358]: Valid: Val Loss 0.2707, Val Acc (93.33, 99.88), Time 10.26
+2019-12-09 15:08:35,311: INFO: [train_wsdan.py:359]: 
+2019-12-09 15:08:35,381: INFO: [train_wsdan.py:193]: Epoch 008, Learning Rate 0.000729
+2019-12-09 15:22:28,129: INFO: [train_wsdan.py:303]: Train: Loss 0.2162, Raw Acc (98.29, 99.98), Crop Acc (85.66, 99.06), Drop Acc (96.56, 99.91), Time 832.75
+2019-12-09 15:22:38,635: INFO: [train_wsdan.py:358]: Valid: Val Loss 0.3635, Val Acc (90.62, 99.92), Time 10.51
+2019-12-09 15:22:38,635: INFO: [train_wsdan.py:359]: 
+2019-12-09 15:22:38,635: INFO: [train_wsdan.py:193]: Epoch 009, Learning Rate 0.0006561

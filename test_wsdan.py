@@ -18,7 +18,8 @@ import numpy as np
 
 from models import WSDAN
 from dataset import *
-from utils import TopKAccuracyMetric, batch_augment
+from utils import *
+from visuals.generate_confusion_matrix import draw_confusion_matrix
 # visualize
 visualize = False
 savepath = 'temp/'
@@ -27,7 +28,8 @@ if visualize:
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-
+MEAN = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1)
+STD = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1)
 def generate_heatmap(attention_maps):
     heat_attention_maps = []
     heat_attention_maps.append(attention_maps[:, 0, ...])  # R
@@ -45,7 +47,7 @@ def main():
                       help='GPU Id (default: 0)')
     parser.add_option('--evalckpt', '--eval-ckpt', dest='eval_ckpt', default='models/wsdan/003.ckpt',
                       help='saved models are in ckpt directory')
-    parser.add_option('-b', '--batch-size', dest='batch_size', default=16, type='int',
+    parser.add_option('-b', '--batch-size', dest='batch_size', default=64, type='int',
                       help='batch size (default: 16)')
     parser.add_option('-j', '--workers', dest='workers', default=4, type='int',
                       help='number of data loading workers (default: 16)')
@@ -66,12 +68,12 @@ def main():
         logging.info('Set ckpt for evaluation options')
         return
     # Dataset for testing
-    transform = transforms.Compose([transforms.Resize(size=(400,400)),
+    transform = transforms.Compose([transforms.Resize(size=(256,256)),
                                     transforms.ToTensor(),
                                     transforms.Normalize(mean=[0.485, 0.456, 0.406], 
                                     std=[0.229, 0.224, 0.225])])
     
-    test_dataset = CustomDataset(data_root='/mnt/HDD/DatasetOriginals/RFW/test/data/',csv_file='data/RFW_Test_Images_Metadata_cleaner.csv',transform=transform)
+    test_dataset = CustomDataset(data_root='/mnt/HDD/DatasetOriginals/RFW/test/data/',csv_file='data/RFW_Test_Images_Metadata.csv',transform=transform)
 
     test_loader = DataLoader(test_dataset, batch_size=options.batch_size * 4, shuffle=False,num_workers=options.workers, pin_memory=True)
 
@@ -102,12 +104,15 @@ def main():
     ref_accuracy = TopKAccuracyMetric(topk=(1, 3))
     raw_accuracy.reset()
     ref_accuracy.reset()
-
+    top1 = AverageMeter('Acc@1', ':6.2f')
+    top_refined = AverageMeter('Acc@1', ':6.2f')
     net.eval()
+    y_pred,y_true = [],[]
     with torch.no_grad():
         pbar = tqdm(total=len(test_loader), unit=' batches')
         pbar.set_description('Validation')
         for i, (X, y) in enumerate(test_loader):
+            y_true += list(y.numpy())
             X = X.to(device)
             y = y.to(device)
 
@@ -118,7 +123,10 @@ def main():
             crop_image = batch_augment(X, attention_maps, mode='crop', theta=0.1, padding_ratio=0.05)
 
             y_pred_crop, _, _ = net(crop_image)
-            y_pred = (y_pred_raw + y_pred_crop) / 2.
+            y_predicted = (y_pred_raw + y_pred_crop) / 2.
+            _, pred = y_predicted.topk(1, 1, True, True)
+
+            y_pred += list(pred.cpu().numpy())
 
             if visualize:
                 # reshape attention maps
@@ -143,7 +151,9 @@ def main():
 
             # Top K
             epoch_raw_acc = raw_accuracy(y_pred_raw, y)
-            epoch_ref_acc = ref_accuracy(y_pred, y)
+            epoch_ref_acc = ref_accuracy(y_predicted, y)
+            top1.update(epoch_raw_acc[0], X.size(0))
+            top_refined.update(epoch_ref_acc[0], X.size(0))
 
             # end of this batch
             batch_info = 'Val Acc: Raw ({:.2f}, {:.2f}), Refine ({:.2f}, {:.2f})'.format(
@@ -152,6 +162,12 @@ def main():
             pbar.set_postfix_str(batch_info)
 
         pbar.close()
+        print(' * Raw Accuracy {top1.avg:.3f}'.format(top1=top1))
+        print(' * Refined Accuracy {top1.avg:.3f}'.format(top1=top_refined))
+        print(len(y_pred),len(y_true))
+        if options.confusion_matrix:
+            file_name ='source/wsdan_confusion_matrix.svg'
+            draw_confusion_matrix(np.asarray(y_true),np.asarray(y_pred),file_name)
 
 
 if __name__ == '__main__':

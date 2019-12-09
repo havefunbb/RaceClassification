@@ -81,6 +81,7 @@ def load_checkpoint(ckpt_file,model):
 def test(test_loader, model, criterion):
     y_pred,y_true = [],[]
     batch_time = AverageMeter('Time', ':6.3f')
+    data_time = AverageMeter('Data', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
     top1 = AverageMeter('Acc@1', ':6.2f')
     top3 = AverageMeter('Acc@3', ':6.2f')

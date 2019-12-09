@@ -40,7 +40,7 @@ python test_sota.py --model inception --ckpt models/model.ckpt
 | Resnet50   | 96,09   | 94,74 | 88,77     | 91,21  | 92,7025 |
 | Resnet101  | 97,59   | 93,38 | 88,75     | 90,69  | 92,6025 |
 | Inception  | 96,06   | 88,42 | 87,07     | 86,06  | 89,4025 |
-| WSDAN      | 97,77   | 93,84 | 94,48     | 88,82  | 93,7275 |
+| WSDAN      | 97,77   | 93,84 | 94,48     | 88,82  | 93,7250z |
 
 ### Confusion Matrices
 
